@@ -560,7 +560,19 @@
             .image-box { height: 250px; }
             .big-title { font-size: 3rem; }
         }
-    </style>
+    
+@keyframes occultChoiceFlash{
+    0%{filter:brightness(1);}
+    20%{filter:brightness(1.8) contrast(1.3);}
+    40%{filter:brightness(0.7);}
+    60%{filter:brightness(1.4);}
+    100%{filter:brightness(1);}
+}
+.dialogue-complete{
+    animation:flicker 5s infinite;
+}
+
+</style>
 </head>
 <body>
 
@@ -624,6 +636,8 @@
         let timerInterval = null;
         let timeLeft = 20; 
         let currentSceneId = "S1"; 
+        let typingTimer = null;
+        let currentVideoElement = null;
 
         const scenes = {
             S1: {
@@ -808,7 +822,24 @@
             }
         }
 
-        function renderScene(sceneId) {
+        
+        function typeDialogue(text) {
+            clearInterval(typingTimer);
+            const dialogueEl = document.getElementById('ui-dialogue');
+            dialogueEl.innerText = "";
+            dialogueEl.classList.remove('dialogue-complete');
+            let index = 0;
+            typingTimer = setInterval(() => {
+                dialogueEl.innerText = text.slice(0, index);
+                index++;
+                if (index > text.length) {
+                    clearInterval(typingTimer);
+                    dialogueEl.classList.add('dialogue-complete');
+                }
+            }, 20);
+        }
+
+function renderScene(sceneId) {
             const scene = scenes[sceneId];
             if (!scene) return;
             
@@ -816,7 +847,7 @@
 
             document.getElementById('ui-meta').innerText = scene.meta;
             document.getElementById('ui-title').innerText = scene.title;
-            document.getElementById('ui-dialogue').innerText = scene.getDialogue();
+            typeDialogue(scene.getDialogue());
             document.getElementById('ui-visual-desc').innerText = scene.visual;
             
             const imgBox = document.getElementById('ui-image');
@@ -841,6 +872,7 @@
             };
 
             imgBox.appendChild(videoEl);
+            currentVideoElement = videoEl;
 
             const optBox = document.getElementById('ui-options');
             optBox.innerHTML = "";
@@ -850,6 +882,12 @@
                 btn.innerText = opt.text;
                 btn.onclick = () => {
                     clearInterval(timerInterval);
+                    document.body.style.animation='occultChoiceFlash 0.45s steps(4)';
+                    setTimeout(()=>document.body.style.animation='',450);
+                    if (currentSceneId === "S8" && currentVideoElement) {
+                        currentVideoElement.muted = true;
+                        currentVideoElement.volume = 0;
+                    }
                     if (opt.s) S += opt.s;
                     if (opt.e) E += opt.e;
                     if (opt.b) B += opt.b;
